@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "Daemon E210 V2.0",
+    "version": "2.0.0",
+    "description": "Neural Interface for Web Exploration",
+    "permissions": [
+        "sidePanel",
+        "activeTab",
+        "scripting",
+        "tabs"
+    ],
+    "host_permissions": [
+        "http://localhost:3001/*",
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "matrix_junction.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [ "<all_urls>" ],
+            "js": [ "reality_injector.js" ],
+            "css": [ "visuals.css" ]
+        }
+    ],
+    "side_panel": {
+        "default_path": "control_deck.html"
+    },
+    "action": {
+        "default_title": "Open Control Deck"
+    }
+}

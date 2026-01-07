@@ -1,0 +1,6 @@
+.flux-lock-on {
+    outline: 2px solid #ff00ff !important;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.7);
+    transition: all 0.3s ease;
+    z-index: 999999;
+}

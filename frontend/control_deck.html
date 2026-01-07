@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daemon Control Deck</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00; /* Hacker green */
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            height: 95vh;
+        }
+        h2 { text-transform: uppercase; border-bottom: 1px solid #00ff00; padding-bottom: 10px; }
+        
+        #mission-input {
+            width: 100%;
+            height: 60px;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        
+        #engage-btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        #engage-btn:hover { background: #00cc00; }
+        
+        #flight-log {
+            margin-top: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+            border-top: 1px dashed #333;
+            padding-top: 10px;
+            font-size: 12px;
+        }
+        
+        .log-entry { margin-bottom: 8px; }
+        .log-error { color: #ff0000; }
+        .log-success { color: #00ffff; }
+        
+        .action-card {
+            border: 1px solid #333;
+            padding: 10px;
+            margin-top: 5px;
+            background: #111;
+        }
+        .run-op-btn {
+            background: #00ffff;
+            color: #000;
+            border: none;
+            padding: 5px 10px;
+            margin-top: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Daemon V2.0 // Active</h2>
+    
+    <textarea id="mission-input" placeholder="Enter objective..."></textarea>
+    <button id="engage-btn">INITIALIZE SEQUENCE</button>
+    
+    <div id="flight-log"></div>
+
+    <script src="control_deck.js"></script>
+</body>
+</html>
