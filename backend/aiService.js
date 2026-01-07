@@ -3,80 +3,125 @@ require('dotenv').config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    // Note: older SDK versions might not support responseMimeType in generationConfig immediately without specialized setup.
-    // If this fails, we will remove generationConfig and prompt for JSON textually.
-    generationConfig: {
-        responseMimeType: "application/json"
-    }
-});
+// 🎰 Model Roulette: Prioritize stable models with higher quotas
+const MODELS = [
+    "gemini-1.5-flash",      // Priority 1: Stable, High Rate Limits
+    "gemini-2.0-flash-exp",  // Priority 2: Smart/Fast but experimental
+    "gemini-1.5-pro"         // Priority 3: High Intelligence, Slower
+];
+
+// Stats counters
+let stats = {
+    totalRequests: 0,
+    apiCalls: 0,
+    errors: 0,
+    modelUsage: {}
+};
+
+// Delay helper for backoff
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const SYSTEM_INSTRUCTION = `
-You are OmniNav, an intelligent browser assistant.
-Your goal is to help the user navigate the website they are currently on.
+You are OmniNav, an autonomous navigation agent.
+Your goal is to help the user complete multi-step tasks on the web.
 
-INPUT:
-1. User Query: A natural language question.
-2. Page Context: A JSON object containing the current URL, Title, Headings, Links, and Interactables.
+INPUTS:
+1. USER GOAL: The original objective.
+2. HISTORY: List of previous steps taken.
+3. PAGE CONTEXT: Current URL, Headings, Links, Buttons.
+4. MEMORY: Known facts about this website (e.g., "#nav is Main Menu").
 
 OUTPUT:
-You must return a JSON object with the following structure:
+You must return a JSON object with this EXACT structure:
 {
-  "intent": "navigation" | "informational" | "help",
-  "answer": "A short, helpful natural language response to the user.",
-  "steps": ["Step 1 description", "Step 2 description"],
-  "actions": [
-     { "type": "highlight", "selector": "unique_css_selector" },
-     { "type": "click", "selector": "unique_css_selector" }
-  ]
+  "status": "in_progress" | "completed" | "failed",
+  "thought": "A brief reasoning about the current state and what to do next.",
+  "plan": [
+     { "type": "click", "selector": "..." },
+     { "type": "scroll", "selector": "..." },
+     { "type": "type", "selector": "...", "value": "..." },
+     { "type": "wait", "selector": "body" } 
+  ],
+  "learning": { "selector": "...", "label": "Short Semantic Name (e.g., Main Menu)" }, 
+  "answer": "Only strictly necessary if providing a final answer or asking for clarification."
 }
 
 RULES:
-1. IF the user asks to go somewhere (e.g., "Go to settings"), find the most relevant link in the 'Page Context' and create a "navigation" response. Add a "highlight" action for that link.
-2. IF the user asks for information (e.g., "What is this page?"), use the 'Headings' and 'Title' to summarize.
-3. IF the user asks purely general knowledge unrelated to the site, answer briefly but remind them you are a navigation agent.
-4. "actions" array should contain the selectors found in the Page Context. Do not hallucinates selectors.
+1. STAY FOCUSED: Compare the current page to the USER GOAL. Are we there yet?
+2. LINK SELECTION: If we need to navigate, select the most relevant link.
+3. LEARNING: If you encounter a major structural element (Nav, Footer, Search), output a "learning" tag so we remember it.
+4. EXPERT SELECTORS: Use the concise selectors provided in the Page Context.
 `;
 
-async function generateResponse(userQuery, pageContext) {
-    try {
-        console.log("[AI Service] Sending request to Gemini...");
-        const contextString = JSON.stringify(pageContext, null, 2);
-        const prompt = `
-        CONTEXT:
-        ${contextString}
+async function generateResponse(userQuery, pageContext, agentState, domainMemory = {}) {
+    stats.totalRequests++;
+    stats.apiCalls++;
 
-        USER QUERY:
-        "${userQuery}"
-        `;
+    // Context Strings
+    const contextString = JSON.stringify(pageContext, null, 2);
+    const stateString = JSON.stringify(agentState || {}, null, 2);
+    const memoryString = JSON.stringify(domainMemory, null, 2);
 
-        const result = await model.generateContent([
-            { text: SYSTEM_INSTRUCTION },
-            { text: prompt }
-        ]);
+    const prompt = `
+    AGENCY STATE:
+    ${stateString}
 
-        const responseText = result.response.text();
-        console.log("Raw AI Response:", responseText);
+    WEBSITE MEMORY (What we know):
+    ${memoryString}
 
-        return JSON.parse(responseText);
+    CURRENT PAGE:
+    ${contextString}
 
-    } catch (error) {
-        console.error("AI Generation Error Details:");
-        console.error("- Name:", error.name);
-        console.error("- Message:", error.message);
-        if (error.response) {
-            console.error("- Status:", error.response.status);
-            console.error("- Body:", JSON.stringify(error.response, null, 2));
+    LATEST USER INPUT:
+    "${userQuery}"
+    `;
+
+    // 2. Try Models (Roulette)
+    for (const modelName of MODELS) {
+        try {
+            console.log(`[AI Service] Attempting with model: ${modelName}...`);
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const result = await model.generateContent([
+                { text: SYSTEM_INSTRUCTION },
+                { text: prompt }
+            ]);
+
+            const responseText = result.response.text();
+            console.log(`[AI Service] Success with ${modelName}!`);
+            console.log("Response:", responseText);
+
+            // Track usage
+            stats.modelUsage[modelName] = (stats.modelUsage[modelName] || 0) + 1;
+
+            const parsedResponse = JSON.parse(responseText);
+            return parsedResponse;
+
+        } catch (error) {
+            console.warn(`[AI Service] ${modelName} failed: ${error.message}`);
+
+            // Wait 1s before trying next model to behave nicely
+            await delay(1000);
+
+            if (modelName === MODELS[MODELS.length - 1]) {
+                stats.errors++;
+                console.error("All models failed.");
+                return {
+                    status: "failed",
+                    thought: "I'm having connection trouble with the AIBrain.",
+                    plan: [],
+                    answer: "I'm currently overloaded. Please wait 10 seconds and try again."
+                };
+            }
         }
-
-        return {
-            intent: "help",
-            answer: "I'm having trouble connecting to my brain right now. " + error.message,
-            steps: [],
-            actions: []
-        };
     }
 }
 
-module.exports = { generateResponse };
+function getStats() {
+    return stats;
+}
+
+module.exports = { generateResponse, getStats };

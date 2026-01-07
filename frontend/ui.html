@@ -5,8 +5,24 @@
             <span class="omninav-title">OmniNav AI</span>
         </div>
         <div class="header-controls">
+            <button id="omninav-stop-btn" class="stop-btn" title="Stop Task" style="display:none;">🛑</button>
             <button id="omninav-minimize-btn" class="control-btn" title="Minimize">−</button>
             <button id="omninav-close-btn" class="control-btn" title="Close">×</button>
+        </div>
+    </div>
+
+    <!-- Agent Activity Dashboard -->
+    <div id="omninav-dashboard" class="omninav-dashboard" style="display:none;">
+        <div class="dash-row">
+            <span class="dash-label">STATUS</span>
+            <span id="dash-status" class="dash-value">Idle</span>
+        </div>
+        <div class="dash-row">
+            <span class="dash-label">STEP</span>
+            <span id="dash-step" class="dash-value">0</span>
+        </div>
+        <div class="dash-goal-row">
+            <span id="dash-action" class="dash-action">Waiting for command...</span>
         </div>
     </div>
     <div id="omninav-messages" class="omninav-messages">

@@ -62,9 +62,9 @@ function getPageContext() {
         }
     });
 
-    // Extract Links (limit)
+    // Extract Links (limit reduced to save tokens)
     const allLinks = Array.from(document.querySelectorAll('a'));
-    for (const el of allLinks.slice(0, 50)) {
+    for (const el of allLinks.slice(0, 25)) {
         const text = getVisibleText(el);
         if (text && el.href) {
             context.links.push({
@@ -80,7 +80,7 @@ function getPageContext() {
         const text = getVisibleText(el) || el.value || el.getAttribute('aria-label') || 'Button';
         if (elementIsVisible(el)) {
             context.buttons.push({
-                text: text.substring(0, 50),
+                text: text.substring(0, 30),
                 selector: getUniqueSelector(el)
             });
         }
@@ -105,7 +105,71 @@ function getPageContext() {
 
     return context;
 }
+
 // --- End Extractor Logic ---
+
+// --- Navigation Observer ---
+let currentUrl = window.location.href;
+let observerTimeout = null;
+let navigationEnabled = false; // Only observe if we are active? For now, always on but backend decides.
+
+function setupNavigationObserver() {
+    // 1. History API Patching (SPA Support)
+    const pushState = history.pushState;
+    history.pushState = function () {
+        pushState.apply(history, arguments);
+        handleUrlChange();
+    };
+
+    const replaceState = history.replaceState;
+    history.replaceState = function () {
+        replaceState.apply(history, arguments);
+        handleUrlChange();
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+
+    // 2. Mutation Observer (Fallback for weird SPAs & Loading Detection)
+    const observer = new MutationObserver(() => {
+        // Debounce heavy extraction
+        if (observerTimeout) clearTimeout(observerTimeout);
+        observerTimeout = setTimeout(() => {
+            if (window.location.href !== currentUrl) {
+                handleUrlChange();
+            }
+        }, 1000); // Check every 1s of stability
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function handleUrlChange() {
+    currentUrl = window.location.href;
+    console.log("[OmniNav] URL Changed to:", currentUrl);
+
+    // Check if we have an active UI (Shadow DOM)
+    const root = document.getElementById('omninav-root');
+    if (!root) return; // Don't auto-send if agent UI isn't open
+
+    // Debounce the actual update
+    if (observerTimeout) clearTimeout(observerTimeout);
+    observerTimeout = setTimeout(() => {
+        console.log("[OmniNav] Page Stable. Sending Update...");
+        triggerAutoUpdate(root.shadowRoot);
+    }, 1500); // Wait 1.5s for page to settle
+}
+
+function triggerAutoUpdate(shadowRoot) {
+    const messages = shadowRoot.getElementById('omninav-messages');
+
+    // Simulate system message
+    // We send a specific signal to backend
+    const text = `[SYSTEM: NAVIGATION] I verified I am now on ${currentUrl}`;
+    sendMessageToBackend(text, messages, true); // true = isAutoUpdate
+}
+
+setupNavigationObserver();
+
 
 // Function to inject the UI
 async function injectUI() {
@@ -168,10 +232,28 @@ function initializeLogic(shadowRoot) {
         }
     });
 
+    const stopBtn = shadowRoot.getElementById('omninav-stop-btn');
+
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
             const root = document.getElementById('omninav-root');
             if (root) root.remove();
+        });
+    }
+
+    // Stop Button Logic
+    if (stopBtn) {
+        stopBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            addMessage(messages, '🛑 Stopping task...', 'error');
+            stopBtn.style.display = 'none'; // Hide immediately
+
+            try {
+                // Send abort signal
+                await sendMessageToBackend("FORCE_STOP", messages, true);
+            } catch (err) {
+                console.error("Failed to stop:", err);
+            }
         });
     }
 
@@ -209,9 +291,18 @@ function addMessage(container, text, type) {
     container.scrollTop = container.scrollHeight;
 }
 
-async function sendMessageToBackend(text, container) {
+async function sendMessageToBackend(text, container, isAutoUpdate = false) {
     try {
-        addMessage(container, '...', 'loading');
+        if (!isAutoUpdate) {
+            // Only show user message if user typed it
+            // (The calling function addMessage handles user bubble, but wait...)
+            // Actually handleSend calls addMessage. AutoUpdate does NOT call addMessage for user.
+        } else {
+            // For auto-update, maybe show a small "Observing..." toast?
+            addMessage(container, '👀 Observing new page...', 'loading');
+        }
+
+        if (!isAutoUpdate) addMessage(container, '...', 'loading'); // Normal loading for user query
 
         // SCAN PAGE CONTEXT
         const pageContext = getPageContext();
@@ -224,7 +315,8 @@ async function sendMessageToBackend(text, container) {
             },
             body: JSON.stringify({
                 message: text,
-                context: pageContext
+                context: pageContext,
+                isAuto: isAutoUpdate
             })
         });
 
@@ -241,8 +333,43 @@ async function sendMessageToBackend(text, container) {
         }
 
         // Execute Actions
-        if (data.data && data.data.actions) {
-            executeActions(data.data.actions, container);
+        // Fix: Backend sends 'plan', but we might have looked for 'actions'
+        const actions = data.data.plan || data.data.actions || [];
+
+        if (actions.length > 0) {
+            executeActions(actions, container);
+        }
+
+        // Toggle Stop Button & Dashboard
+        const stopBtn = container.getRootNode().getElementById('omninav-stop-btn');
+        const dashboard = container.getRootNode().getElementById('omninav-dashboard');
+        const dashStatus = container.getRootNode().getElementById('dash-status');
+        const dashStep = container.getRootNode().getElementById('dash-step');
+        const dashAction = container.getRootNode().getElementById('dash-action');
+
+        if (data.state && data.state.status === 'in_progress') {
+            if (stopBtn) stopBtn.style.display = 'inline-block';
+            if (dashboard) {
+                dashboard.style.display = 'flex';
+                if (dashStatus) dashStatus.innerText = "ACTIVE";
+                if (dashStep) dashStep.innerText = data.state.stepCount || "1";
+                // Show last AI thought or action plan
+                if (dashAction && data.data && data.data.thought) {
+                    dashAction.innerText = data.data.thought;
+                }
+            }
+        } else {
+            if (stopBtn) stopBtn.style.display = 'none';
+            if (dashboard) {
+                // Keep dashboard visible but status complete? Or hide?
+                // Let's keep it visible if completed so user sees result stats
+                if (data.state && data.state.status === 'completed') {
+                    if (dashStatus) dashStatus.innerText = "DONE";
+                    if (dashStatus) dashStatus.style.color = "#4caf50"; // Green
+                } else {
+                    dashboard.style.display = 'none';
+                }
+            }
         }
 
     } catch (err) {

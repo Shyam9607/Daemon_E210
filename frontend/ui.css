@@ -52,6 +52,50 @@
     color: #fff;
 }
 
+/* Dashboard Panel */
+.omninav-dashboard {
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 16px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    /* Tech feel */
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dash-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dash-label {
+    color: #aaa;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.dash-value {
+    color: #00f2fe;
+    font-weight: bold;
+}
+
+.dash-goal-row {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 6px;
+    margin-top: 2px;
+}
+
+.dash-action {
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
 /* Messages Area */
 .omninav-messages {
     flex: 1;
@@ -224,6 +268,27 @@
     color: #fff;
 }
 
+/* Stop Button */
+.stop-btn {
+    background: #ff4444;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 8px;
+    margin-right: 8px;
+    /* Space before minimize */
+    display: none;
+    /* Hidden by default */
+    transition: background 0.2s;
+    line-height: 1.2;
+}
+
+.stop-btn:hover {
+    background: #cc0000;
+}
+
 .omninav-logo {
     margin-right: 8px;
     display: none;
@@ -271,28 +336,59 @@
 
 /* --- Highlight Overlay --- */
 .omninav-highlight {
-    outline: 3px solid #00f2fe !important;
-    box-shadow: 0 0 20px #00f2fe, inset 0 0 20px #00f2fe !important;
-    animation: omninav-pulse 2s infinite;
+    outline: 2px solid #00f2fe !important;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.5), inset 0 0 10px rgba(0, 242, 254, 0.2) !important;
+    animation: omninav-pulse 1.5s infinite;
     z-index: 2147483640 !important;
-    /* Just below max z-index */
     position: relative;
-    /* Ensure z-index works */
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.omninav-label {
+    position: absolute;
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: sans-serif;
+    z-index: 2147483641;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translateY(-100%);
+    margin-top: -8px;
+    opacity: 0;
+    animation: omninav-fade-in 0.3s forwards;
 }
 
 @keyframes omninav-pulse {
     0% {
         outline-color: #00f2fe;
-        box-shadow: 0 0 20px #00f2fe;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
     }
 
     50% {
-        outline-color: #4facfe;
-        box-shadow: 0 0 30px #4facfe;
+        outline-color: #ffffff;
+        box-shadow: 0 0 25px rgba(0, 242, 254, 0.8);
     }
 
     100% {
         outline-color: #00f2fe;
-        box-shadow: 0 0 20px #00f2fe;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
+    }
+}
+
+@keyframes omninav-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-80%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(-120%);
     }
 }
