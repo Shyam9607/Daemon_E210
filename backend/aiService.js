@@ -3,11 +3,11 @@ require('dotenv').config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// 🎰 Model Roulette: Prioritize user-selected models
+// 🎰 Model Roulette: Prioritize user-available models
 const MODELS = [
-    "gemma-3-27b-it",        // Priority 1: User Recommended (Robust & lower usage likely) - using -it for instruct if available, otherwise fallback to base in next slot if needed, but usually generic API accepts the base name or -it. Let's try the likely API name. Actually, standard Gemini API often uses specific identifiers. The screenshot says 'gemma-3-27b'. I'll try that first.
-    "gemma-3-27b",           // Just in case 'it' suffix isn't used
-    "gemini-2.5-flash-lite"  // Priority 2: Alternative with likely separate quota
+    "gemma-3-27b-it",        // Priority 1: High Quota (14.4K/day) & Capable
+    "gemma-3-12b-it",        // Priority 2: Very efficient, high quota
+    "gemini-3-flash"         // Priority 3: Emergency (20 req/day limit)
 ];
 
 // Stats counters

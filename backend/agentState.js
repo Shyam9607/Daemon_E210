@@ -1,7 +1,27 @@
+const fs = require('fs');
+const path = require('path');
+
 // Simple in-memory state store for the agent
 // In a real production app, this would be in a database (Redis/Postgres)
 
 const MAX_STEPS = 15;
+const LOG_FILE = path.join(__dirname, 'session_logs.jsonl');
+
+function saveSessionLog(state) {
+    const logEntry = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        goal: state.goal,
+        status: state.status,
+        steps: state.stepCount,
+        history: state.history,
+        visited: state.visitedUrls
+    }) + '\n';
+
+    fs.appendFile(LOG_FILE, logEntry, (err) => {
+        if (err) console.error("Failed to save session log:", err);
+    });
+}
+
 
 // Domain-level memory (Shared across tasks for the same site)
 // Map<domain, { semanticMap: {}, knownPaths: [] }>
@@ -104,11 +124,15 @@ function checkSafety() {
 function abortTask() {
     sessionState.status = "failed";
     console.log("[Agent State] Task Aborted manually or by safety guard.");
+    saveSessionLog(sessionState); // Log it
     return sessionState;
 }
 
 function setStatus(status) {
     sessionState.status = status;
+    if (status === 'completed' || status === 'failed') {
+        saveSessionLog(sessionState); // Log it
+    }
 }
 
 function getMemory(url) {
