@@ -15,7 +15,7 @@ const TopBar = () => {
                     <button
                         key={code}
                         id={`btn-course-${code}`}
-                        onClick={() => navigate(`/course/${code}/home`)}
+                        onClick={() => navigate(`/dashboard/course/${code}/home`)}
                         className="px-4 py-1.5 bg-blue-700 hover:bg-blue-500 text-white text-sm font-medium rounded-full transition-colors border border-blue-500 hover:border-blue-400 whitespace-nowrap"
                     >
                         {code}

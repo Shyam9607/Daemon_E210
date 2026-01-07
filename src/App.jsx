@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import CourseContextLayout from './layouts/CourseContextLayout';
+import LoginPage from './pages/LoginPage';
 
 // Dashboard Pages
 import RegistrationPage from './pages/RegistrationPage';
@@ -20,7 +21,11 @@ import { CourseCalendar, CourseTests, CourseForums, CourseAnnouncements } from '
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<MainLayout />}>
+      {/* Public Route */}
+      <Route path="/" element={<LoginPage />} />
+
+      {/* Protected Routes (Hidden behind "Fake Auth") */}
+      <Route path="/dashboard" element={<MainLayout />}>
         {/* Main Dashboard Routes */}
         <Route index element={<RegistrationPage />} />
         <Route path="financials" element={<FeePage />} />
@@ -41,6 +46,9 @@ function App() {
           <Route path="announcements" element={<CourseAnnouncements />} />
         </Route>
       </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

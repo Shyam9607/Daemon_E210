@@ -4,11 +4,11 @@ import { FaUserGraduate, FaMoneyBillWave, FaBook, FaClipboardList, FaIdCard, FaU
 
 const Sidebar = () => {
     const navItems = [
-        { name: 'Registration', path: '/', icon: <FaClipboardList />, id: 'registration' },
-        { name: 'Exam Scores', path: '/exam-scores', icon: <FaUserGraduate />, id: 'exam-scores' },
-        { name: 'Financials', path: '/financials', icon: <FaMoneyBillWave />, id: 'fee' },
-        { name: 'Library', path: '/library', icon: <FaBook />, id: 'library' },
-        { name: 'Personal', path: '/personal', icon: <FaIdCard />, id: 'personal' },
+        { name: 'Registration', path: '/dashboard', icon: <FaClipboardList />, id: 'registration' },
+        { name: 'Exam Scores', path: '/dashboard/exam-scores', icon: <FaUserGraduate />, id: 'exam-scores' },
+        { name: 'Financials', path: '/dashboard/financials', icon: <FaMoneyBillWave />, id: 'fee' },
+        { name: 'Library', path: '/dashboard/library', icon: <FaBook />, id: 'library' },
+        { name: 'Personal', path: '/dashboard/personal', icon: <FaIdCard />, id: 'personal' },
     ];
 
     return (

@@ -2,6 +2,8 @@ export const db = {
     student: {
         name: "Darsi Prudhvi Manvith",
         regNo: "UNISPHERE-CS-22001",
+        gpa: 8.9,
+        attendance: 92,
         fees: {
             pending: 45000,
             history: [
