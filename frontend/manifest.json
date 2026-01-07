@@ -1,0 +1,45 @@
+{
+    "manifest_version": 3,
+    "name": "OmniNav - AI Navigation Agent",
+    "version": "1.0",
+    "description": "AI-powered website navigation assistant",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage"
+    ],
+    "host_permissions": [
+        "http://localhost:3000/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "css": [
+                "ui.css"
+            ]
+        }
+    ],
+    "action": {
+        "default_title": "OmniNav"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "ui.html",
+                "ui.css",
+                "ui.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ]
+}
